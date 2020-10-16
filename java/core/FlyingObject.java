@@ -4,20 +4,43 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.List;
 import java.util.Random;
 
 public abstract class FlyingObject {
-    public static final int LIFE = 0;
-    public static final int DEAD = 1;
-    public static final int REMOVE = 2;
-
-    protected int state = LIFE;
+    private static List<BufferedImage> images;
     protected int width;
     protected int height;
     protected int x;
     protected int y;
+    protected int state = LIFE;
 
-    /** 固定x坐标出现的飞行物 */
+    /**
+     * state constants of the flying object
+     * Represents that the flyingObject is alive
+     */
+    public static final int LIFE = 0;
+
+    /**
+     * state constants of the flying object
+     * Represents that the flyingObject is dead
+     */
+    public static final int DEAD = 1;
+
+    /**
+     * state constants of the flying object
+     * Represents that the flyingObject can be removed
+     */
+    public static final int REMOVE = 2;
+
+    /**
+     * constructor:
+     * for the flyingObjects who appear with a fixed x-coordinate
+     * @param width width of the flyingObject
+     * @param height height of the flyingObject
+     * @param x the x-coordinate value of the flyingObject's location
+     * @param y the y-coordinate value of the flyingObject's location
+     */
     FlyingObject(int width, int height, int x, int y){
         this.width = width;
         this.height = height;
@@ -25,7 +48,12 @@ public abstract class FlyingObject {
         this.y = y;
     }
 
-    /** 随机x坐标出现的飞行物 */
+    /**
+     * constructor:
+     * for the flyingObject who appear with a random x-coordinate
+     * @param width width of the flyingObject
+     * @param height height of the flyingObject
+     */
     FlyingObject(int width, int height){
         this.width = width;
         this.height = height;
@@ -34,8 +62,12 @@ public abstract class FlyingObject {
         this.y = -this.height;
     }
 
-    /** 加载图片(静态资源) */
-    public static BufferedImage loadImages(String fileName){
+    /**
+     * load image from disk(static resource)
+     * @param fileName the name of the image
+     * @return a BufferedImage type image
+     */
+    public static BufferedImage loadImage(String fileName){
         try {
             return ImageIO.read(FlyingObject.class.getResource(fileName));
         } catch (IOException e) {
@@ -44,37 +76,89 @@ public abstract class FlyingObject {
         }
     }
 
-    /** 飞行物的移动 */
+    /**
+     * the movement of the FlyingObject
+     */
     public abstract void step();
 
-    /** 获取实时图片 */
-    public abstract  BufferedImage getImage();
+    private int deadIndex = 0;      // 敌机死了时, 图片轮播开始的下标(爆炸效果)
+    /**
+     * get the real-time image of the FlyingObject
+     * @return the real-time image
+     */
+    public BufferedImage getImage(){
+        if(isLife()){
+            return images.get(0);
+        }else if(isDead()){
+            BufferedImage img = images.get(deadIndex++);
+            if(deadIndex == images.size()){
+                state = REMOVE;
+            }
+            return img;
+        }
+        return null;
+    };
 
-    /** 绘画对象 g:画笔 */
+    /**
+     * draw the image of the object on the screen
+     * @param g can be understand as a pen
+     */
     public void paintObject(Graphics g){
         g.drawImage(getImage(), x, y, null);
     }
 
-    /** 判断是否活着 */
+    /**
+     * judge whether the obj is alive or not
+     * @return if alive return true, if not alive return false
+     */
     public boolean isLife(){
         return state == LIFE;
     }
 
-    /** 判断是否死了 */
+    /**
+     * judge whether the obj is dead or not
+     * @return if dead return true, if not dead return false
+     */
     public boolean isDead(){
         return state == DEAD;
     }
 
-    /** 判断是否可移除 */
+    /**
+     * judge whether the obj can be removed or not
+     * @return if can be removed return true, if can not be removed return false
+     */
     public boolean isRemove(){
         return state == REMOVE;
     }
 
-    /** 判断飞行物是否越界 */
+    /**
+     * judge whether the obj is out of bounds  or not
+     * @return a boolean value
+     */
     public abstract boolean outOfBounds();
 
-    /** 转变飞行物状态为DEAD */
+    /**
+     * change the state of the FlyingObject into dead
+     */
     public void goDead(){
         state = DEAD;
+    }
+
+    /**
+     * checking that whether bullet is hitting enemy or not
+     * @param other another FlyingObject
+     * @return  a boolean value ,return true if one hit another
+     */
+    public boolean hit(FlyingObject other){
+        int x1 = this.x - other.width;
+        int x2 = this.x + this.width;
+        int y1 = this.y - other.height;
+        int y2 = this.y + this.height;
+        int x = other.x;
+        int y = other.y;
+
+        return x>=x1 && x<=x2
+                &&
+                y>=y1 && y<=y2;
     }
 }

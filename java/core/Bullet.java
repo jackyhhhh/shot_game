@@ -5,7 +5,7 @@ import java.awt.image.BufferedImage;
 public class Bullet extends FlyingObject{
     private static  BufferedImage image;
     static {
-        image = loadImages("bullet.png");
+        image = loadImage("bullet.png");
     }
 
     private int speed;

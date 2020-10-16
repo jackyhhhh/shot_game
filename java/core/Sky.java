@@ -6,7 +6,7 @@ import java.awt.image.BufferedImage;
 public class Sky extends FlyingObject {
     private static BufferedImage image;
     static {
-        image = loadImages("background.png");
+        image = loadImage("background.png");
     }
 
     private int speed;

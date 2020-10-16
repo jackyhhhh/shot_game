@@ -1,18 +1,16 @@
 package core;
 
-import com.sun.org.apache.regexp.internal.RE;
-
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class Bee extends FlyingObject{
+public class Bee extends FlyingObject implements Award{
     private static List<BufferedImage> images;
     static {
         images = new ArrayList<>();
         for(int i=0;i<5;i++){
-            images.add(loadImages("bee"+i+".png"));
+            images.add(loadImage("bee"+i+".png"));
         }
     }
 
@@ -35,23 +33,13 @@ public class Bee extends FlyingObject{
         }
     }
 
-    int deadIndex = 0;
-    @Override
-    public BufferedImage getImage() {
-        if(isLife()){
-            return images.get(0);
-        }else if(isDead()){
-            BufferedImage img = images.get(deadIndex++);
-            if(deadIndex == images.size()) {
-                state = REMOVE;
-            }
-            return img;
-        }
-        return null;
-    }
-
     @Override
     public boolean outOfBounds() {
         return this.y >= World.HEIGHT;
+    }
+
+    @Override
+    public int getType() {
+        return awardType;
     }
 }

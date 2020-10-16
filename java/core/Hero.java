@@ -1,5 +1,6 @@
 package core;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +10,7 @@ public class Hero extends FlyingObject {
     static {
         images = new ArrayList<>();
         for(int i=0;i<6;i++){
-            images.add(loadImages("hero"+i+".png"));
+            images.add(loadImage("hero"+i+".png"));
         }
     }
 
@@ -26,21 +27,6 @@ public class Hero extends FlyingObject {
 
     }
 
-    private int deadIndex = 0;
-    @Override
-    public BufferedImage getImage() {
-        if(isLife()){
-            return images.get(0);
-        }else if(isDead()){
-            BufferedImage img = images.get(deadIndex++);
-            if(deadIndex == images.size()){
-                state = DEAD;
-            }
-            return img;
-        }
-        return null;
-    }
-
     @Override
     public boolean outOfBounds() {
         return false;
@@ -49,6 +35,22 @@ public class Hero extends FlyingObject {
     public void moveTo(int x, int y){
         this.x = x - this.width/2;
         this.y = y - this.height/2;
+    }
+
+    private int aliveIndex = 0;
+    private int deadIndex = 0;
+    @Override
+    public BufferedImage getImage(){
+        if(isLife()){
+            return images.get(aliveIndex++ % 2);
+        }else if(isDead()){
+            BufferedImage img = images.get(deadIndex++);
+            if(deadIndex == images.size()){
+                state = REMOVE;
+            }
+            return img;
+        }
+        return null;
     }
 
     /**
