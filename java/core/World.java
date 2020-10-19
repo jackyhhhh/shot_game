@@ -68,7 +68,7 @@ public class World extends JPanel {
        int type = rand.nextInt(20);
        if(type < 5){
            return new BigPlane();
-       }else if(type < 15){
+       }else if(type < 18){
            return new AirPlane();
        }else{
            return new Bee();
@@ -128,7 +128,7 @@ public class World extends JPanel {
         List<Bullet> bulletsAlive = new ArrayList<>();
         for(Bullet b : bullets){
             if(!b.outOfBounds() && !b.isRemove()){
-                enemiesAlive.add(b);
+                bulletsAlive.add(b);
             }
         }
         bullets = bulletsAlive;
@@ -168,7 +168,7 @@ public class World extends JPanel {
      */
     public void heroHitEnemyAction(){
         for(FlyingObject f : enemies){
-            if(hero.isLife() && f.isLife() && f.hit(hero)){
+            if(f.isLife() && f.hit(hero)){
                 f.goDead();
                 hero.subtractLife();
                 hero.clearDoubleFire();
@@ -258,8 +258,8 @@ public class World extends JPanel {
         for(Bullet b : bullets){
             b.paintObject(g);
         }
-        g.drawString("SCORE:", 10, 25);
-        g.drawString("LIVES:"+hero.getLife(), 10, 45);
+        g.drawString("SCORE: "+score, 10, 25);
+        g.drawString("LIVES: "+hero.getLife(), 10, 45);
 
         switch(status){
             case START:
@@ -275,8 +275,8 @@ public class World extends JPanel {
 
     public static void main(String[] args) {
         JFrame frame = new JFrame();        //create a window object
-        World world = new World();          //create a pannel object
-        frame.add(world);                   //add pannel into window
+        World world = new World();          //create a panel object
+        frame.add(world);                   //add panel into window
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);       //setting that closing window will quit the game
         frame.setSize(WIDTH, HEIGHT);       //set the window size according to the World width/height
         frame.setLocationRelativeTo(null);  //the window will be placed in the center of the screen

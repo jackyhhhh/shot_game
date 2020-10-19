@@ -20,6 +20,20 @@ public class BigPlane extends FlyingObject implements Enemy{
     }
 
     @Override
+    public BufferedImage getImage() {
+        if(isLife()){
+            return images.get(0);
+        }else if(isDead()){
+            BufferedImage img = images.get(deadIndex++);
+            if(deadIndex == images.size()){
+                state = REMOVE;
+            }
+            return img;
+        }
+        return null;
+    }
+
+    @Override
     public void step() {
         y += speed;
     }
@@ -29,6 +43,7 @@ public class BigPlane extends FlyingObject implements Enemy{
         return this.y >= World.HEIGHT;
     }
 
+    @Override
     public int getScore(){
         return 3;
     }

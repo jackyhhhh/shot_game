@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Hero extends FlyingObject {
-    private static List<BufferedImage> images;
+    private static final List<BufferedImage> images;
     static {
         images = new ArrayList<>();
         for(int i=0;i<6;i++){
@@ -38,7 +38,6 @@ public class Hero extends FlyingObject {
     }
 
     private int aliveIndex = 0;
-    private int deadIndex = 0;
     @Override
     public BufferedImage getImage(){
         if(isLife()){
@@ -60,7 +59,7 @@ public class Hero extends FlyingObject {
      * @return an ArrayList of bullets
      */
     public List<Bullet> shoot(){
-        int xStep = this.width/4;    // 四分之一英雄机的高
+        int xStep = this.width/4;    // 四分之一英雄机的宽
         int yStep = 20;
         List<Bullet> bs = new ArrayList<>();
         if(doubleFire > 0){

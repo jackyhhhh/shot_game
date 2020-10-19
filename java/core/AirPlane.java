@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AirPlane extends FlyingObject implements Enemy{
-    private static List<BufferedImage> images;
+    private static final List<BufferedImage> images;
     static {
         images = new ArrayList<>();
         for(int i=0;i<5;i++){
@@ -23,6 +23,20 @@ public class AirPlane extends FlyingObject implements Enemy{
     @Override
     public void step() {
         y += speed;
+    }
+
+    @Override
+    public BufferedImage getImage() {
+        if(isLife()){
+            return images.get(0);
+        }else if(isDead()){
+            BufferedImage img = images.get(deadIndex++);
+            if(deadIndex == images.size()){
+                state = REMOVE;
+            }
+            return img;
+        }
+        return null;
     }
 
     @Override

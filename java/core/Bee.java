@@ -34,6 +34,20 @@ public class Bee extends FlyingObject implements Award{
     }
 
     @Override
+    public BufferedImage getImage() {
+        if(isLife()){
+            return images.get(0);
+        }else if(isDead()){
+            BufferedImage img = images.get(deadIndex++);
+            if(deadIndex == images.size()){
+                state = REMOVE;
+            }
+            return img;
+        }
+        return null;
+    }
+
+    @Override
     public boolean outOfBounds() {
         return this.y >= World.HEIGHT;
     }

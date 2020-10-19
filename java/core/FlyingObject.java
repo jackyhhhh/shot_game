@@ -8,12 +8,12 @@ import java.util.List;
 import java.util.Random;
 
 public abstract class FlyingObject {
-    private static List<BufferedImage> images;
     protected int width;
     protected int height;
     protected int x;
     protected int y;
     protected int state = LIFE;
+    protected int deadIndex = 0;        // 敌机死了时, 图片轮播开始的下标(爆炸效果)
 
     /**
      * state constants of the flying object
@@ -81,23 +81,11 @@ public abstract class FlyingObject {
      */
     public abstract void step();
 
-    private int deadIndex = 0;      // 敌机死了时, 图片轮播开始的下标(爆炸效果)
     /**
      * get the real-time image of the FlyingObject
      * @return the real-time image
      */
-    public BufferedImage getImage(){
-        if(isLife()){
-            return images.get(0);
-        }else if(isDead()){
-            BufferedImage img = images.get(deadIndex++);
-            if(deadIndex == images.size()){
-                state = REMOVE;
-            }
-            return img;
-        }
-        return null;
-    };
+    public abstract BufferedImage getImage();
 
     /**
      * draw the image of the object on the screen
@@ -145,7 +133,7 @@ public abstract class FlyingObject {
     }
 
     /**
-     * checking that whether bullet is hitting enemy or not
+     * checking that whether the enemy is hitting bullet/hero or not
      * @param other another FlyingObject
      * @return  a boolean value ,return true if one hit another
      */

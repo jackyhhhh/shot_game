@@ -3,12 +3,12 @@ package core;
 import java.awt.image.BufferedImage;
 
 public class Bullet extends FlyingObject{
-    private static  BufferedImage image;
+    private static final BufferedImage image;
     static {
         image = loadImage("bullet.png");
     }
 
-    private int speed;
+    private final int speed;
     Bullet(int x, int y) {
         super(10, 21, x, y);
         speed = 3;
