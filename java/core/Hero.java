@@ -1,7 +1,7 @@
 package core;
 
-import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,16 +10,15 @@ public class Hero extends FlyingObject {
     static {
         images = new ArrayList<>();
         for(int i=0;i<6;i++){
-            images.add(loadImage("hero"+i+".png"));
+            images.add(loadImage("images"+ File.separator+"hero"+i+".png"));
         }
     }
 
-    private int life;
     private int doubleFire;
     Hero() {
         super(127, 169, 210, 550);
-        life = 3;
-        doubleFire = 0;
+        health = 3;
+        doubleFire = 40;
     }
 
     @Override
@@ -40,12 +39,12 @@ public class Hero extends FlyingObject {
     private int aliveIndex = 0;
     @Override
     public BufferedImage getImage(){
-        if(isLife()){
+        if(isAlive()){
             return images.get(aliveIndex++ % 2);
         }else if(isDead()){
             BufferedImage img = images.get(deadIndex++);
             if(deadIndex == images.size()){
-                state = REMOVE;
+                status = REMOVE;
             }
             return img;
         }
@@ -56,9 +55,10 @@ public class Hero extends FlyingObject {
      * hero shoot bullets:
      * if hero has double fire ,shoot two bullet by one time
      * if hero has no double fire, shoot one bullet by one time
+     * @param level the game level
      * @return an ArrayList of bullets
      */
-    public List<Bullet> shoot(){
+    public List<Bullet> shoot(int level){
         int xStep = this.width/4;    // 四分之一英雄机的宽
         int yStep = 20;
         List<Bullet> bs = new ArrayList<>();
@@ -68,16 +68,8 @@ public class Hero extends FlyingObject {
         }else{
             bs.add(new Bullet(this.x + 2*xStep, this.y - yStep));
         }
+        bs.forEach(bullet -> bullet.setSpeedByLevel(level));
         return bs;
-    }
-
-    /**
-     * hero get awards by kill enemies
-     * There ara two award type: 0 or 1
-     * when awardType=0 ,hero get 1 life
-     */
-    public void addLife(){
-        life++;
     }
 
     /**
@@ -87,18 +79,6 @@ public class Hero extends FlyingObject {
      */
     public void addDoubleFire(){
         doubleFire += 40;
-    }
-
-    /** get the runtime count of hero's life */
-    public int getLife(){
-        return life;
-    }
-
-    /**
-     * hero lose one life when hitting the enemy or letting the enemy  go
-     */
-    public void subtractLife(){
-        life--;
     }
 
     /**

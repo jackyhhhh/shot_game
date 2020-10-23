@@ -3,23 +3,26 @@ package core;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.io.Serializable;
 import java.util.Random;
 
-public abstract class FlyingObject {
+public abstract class FlyingObject implements Serializable {
+    private static final int serialVersionUID = 1;
     protected int width;
     protected int height;
-    protected int x;
-    protected int y;
-    protected int state = LIFE;
+    protected int x, xSpeed;
+    protected int y, ySpeed;
+    protected int status = ALIVE;
     protected int deadIndex = 0;        // 敌机死了时, 图片轮播开始的下标(爆炸效果)
+    protected int health = 1;
 
     /**
      * state constants of the flying object
      * Represents that the flyingObject is alive
      */
-    public static final int LIFE = 0;
+    public static final int ALIVE = 0;
 
     /**
      * state constants of the flying object
@@ -46,6 +49,8 @@ public abstract class FlyingObject {
         this.height = height;
         this.x = x;
         this.y = y;
+        ySpeed = 2;
+        xSpeed = 0;
     }
 
     /**
@@ -60,16 +65,18 @@ public abstract class FlyingObject {
         Random rand = new Random();
         this.x = rand.nextInt(World.WIDTH - this.width);
         this.y = -this.height;
+        ySpeed = 2;
+        xSpeed = 0;
     }
 
     /**
      * load image from disk(static resource)
-     * @param fileName the name of the image
+     * @param pathname the name of the image
      * @return a BufferedImage type image
      */
-    public static BufferedImage loadImage(String fileName){
+    public static BufferedImage loadImage(String pathname){
         try {
-            return ImageIO.read(FlyingObject.class.getResource(fileName));
+            return ImageIO.read(new File(pathname));
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException();
@@ -99,8 +106,8 @@ public abstract class FlyingObject {
      * judge whether the obj is alive or not
      * @return if alive return true, if not alive return false
      */
-    public boolean isLife(){
-        return state == LIFE;
+    public boolean isAlive(){
+        return status == ALIVE;
     }
 
     /**
@@ -108,7 +115,7 @@ public abstract class FlyingObject {
      * @return if dead return true, if not dead return false
      */
     public boolean isDead(){
-        return state == DEAD;
+        return status == DEAD;
     }
 
     /**
@@ -116,7 +123,7 @@ public abstract class FlyingObject {
      * @return if can be removed return true, if can not be removed return false
      */
     public boolean isRemove(){
-        return state == REMOVE;
+        return status == REMOVE;
     }
 
     /**
@@ -129,7 +136,7 @@ public abstract class FlyingObject {
      * change the state of the FlyingObject into dead
      */
     public void goDead(){
-        state = DEAD;
+        status = DEAD;
     }
 
     /**
@@ -148,5 +155,20 @@ public abstract class FlyingObject {
         return x>=x1 && x<=x2
                 &&
                 y>=y1 && y<=y2;
+    }
+
+    public void addHealth(){
+        health++;
+    }
+
+    public void subtractHealth(){
+        health--;
+        if(health <= 0){
+            status = DEAD;
+        }
+    }
+
+    public int getHealth(){
+        return health;
     }
 }

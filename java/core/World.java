@@ -5,19 +5,24 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.io.*;
 import java.util.*;
 import java.util.List;
 import java.util.Timer;
 
-public class World extends JPanel {
-    private static final BufferedImage startImage;
-    private static final BufferedImage pauseImage;
-    private static final BufferedImage gameoverImage;
+public class World extends JPanel implements Serializable {
+    private static final int serialVersionUID = 2;
+    private static final Map<String, BufferedImage> images = new HashMap<>();
     static {
-        startImage = FlyingObject.loadImage("start.png");
-        pauseImage = FlyingObject.loadImage("pause.png");
-        gameoverImage = FlyingObject.loadImage("gameover.png");
+        images.put("start", FlyingObject.loadImage("images"+ File.separator+"start.png"));
+        images.put("pause", FlyingObject.loadImage("images"+ File.separator+"pause.png"));
+        images.put("over", FlyingObject.loadImage("images"+ File.separator+"over.png"));
+        images.put("win", FlyingObject.loadImage("images"+ File.separator+"win.png"));
+        images.put("saveButton", FlyingObject.loadImage("images"+ File.separator+"saveButton.png"));
+        images.put("saving", FlyingObject.loadImage("images"+ File.separator+"saving.png"));
+        images.put("loading", FlyingObject.loadImage("images"+ File.separator+"loading.png"));
     }
+
     /**
      * the width of the world
      */
@@ -51,39 +56,116 @@ public class World extends JPanel {
      * hero lose all of his lives, the game is over
      */
     public static final int GAME_OVER = 3;
+    public static final int WIN = 4;
+    public static final int SAVING = 5;
+    public static final int LOADING = 6;
 
-    private int status = START;
-    private int score = 0;
+
+    private int gameStatus;
+    private int score;
+    private int level;
+    private int actionIndex;
     private Sky sky = new Sky();
     private Hero hero = new Hero();
-    private List<FlyingObject> enemies = new ArrayList<>();
-    private List<Bullet> bullets = new ArrayList<>();
+    private List<FlyingObject> enemies = Collections.synchronizedList(new ArrayList<>());
+    private List<Bullet> bullets = Collections.synchronizedList(new ArrayList<>());
+
+    private void initGame(){
+        System.out.println("正在初始化游戏...");
+        gameStatus = START;
+        score = 0;
+        level = 1;
+        actionIndex = 0;
+        sky = new Sky();
+        hero = new Hero();
+        enemies = Collections.synchronizedList(new ArrayList<>());
+        bullets = Collections.synchronizedList(new ArrayList<>());
+        System.out.println("游戏初始化成功, 准备就绪!");
+    }
+
+    private void saveGame(){
+        System.out.println("正在保存当前游戏状态...");
+        System.out.println(" score:"+score+
+                "\n level:"+level
+                +"\n hero_health:"+hero.getHealth()
+                +"\n enemies_count"+enemies.size()
+                +"\n bullets_count"+bullets.size()
+        );
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(
+                    new FileOutputStream(
+                            new File("profile"+File.separator+"save_file.dat"
+                            )
+                    )
+            );
+
+            oos.writeObject(score+"-"+level);
+            oos.writeObject(sky);
+            oos.writeObject(hero);
+            oos.writeObject(enemies);
+            oos.writeObject(bullets);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("游戏存档成功!!");
+    }
+
+    @SuppressWarnings("unchecked")
+    private void loadGame(){
+        System.out.println("正在加载上次存档的游戏...");
+        System.out.println(" score:"+score+
+                "\n level:"+level
+                +"\n hero_health:"+hero.getHealth()
+                +"\n enemies_count"+enemies.size()
+                +"\n bullets_count"+bullets.size()
+        );
+        try {
+            ObjectInputStream ois = new ObjectInputStream(
+                    new FileInputStream(
+                            new File("profile"+File.separator+"save_file.dat"
+                            )
+                    )
+            );
+            actionIndex = 0;
+            String line = (String) ois.readObject();
+            String[] data = line.split("-");
+            score = Integer.parseInt(data[0]);
+            level = Integer.parseInt(data[1]);
+            sky = (Sky) ois.readObject();
+            hero = (Hero) ois.readObject();
+            enemies = (List<FlyingObject>) ois.readObject();
+            bullets = (List<Bullet>) ois.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        System.out.println("加载成功!!!");
+    }
 
     /**
      * create the next enemy object
      * @return  an enemy of FlyingObject type
      */
     public FlyingObject nextOne(){
+       FlyingObject f;
        Random rand = new Random();
        int type = rand.nextInt(20);
        if(type < 5){
-           return new BigPlane();
+           f = new BigPlane();
        }else if(type < 18){
-           return new AirPlane();
+           f = new AirPlane();
        }else{
-           return new Bee();
+           f = new Bee();
        }
+       ((Enemy) f).setSpeedByLevel(level);
+       return f;
     }
 
-    private int enterIndex = 0;
     /**
      * the enemy enter into the world
      */
     public void enterAction(){
-        enterIndex++;
-        if(enterIndex%40 == 0){
-            FlyingObject obj = nextOne();
-            enemies.add(obj);
+        if(actionIndex % 40 == 0){
+            enemies.add(nextOne());
         }
     }
 
@@ -100,15 +182,13 @@ public class World extends JPanel {
         }
     }
 
-    private int shootIndex = 0;
     /**
      * hero keep shooting bullets
      * bullets enter into the world
      */
     public void shootAction(){
-        shootIndex++;
-        if(shootIndex%30 == 0){
-            List<Bullet> bs = hero.shoot();
+        if(actionIndex % 10 == 0){
+            List<Bullet> bs = hero.shoot(level);
             bullets.addAll(bs);
         }
     }
@@ -117,21 +197,23 @@ public class World extends JPanel {
      * remove the FlyingObject who isOutOfBounds
      */
     public void outOfBoundsAction(){
-        List<FlyingObject> enemiesAlive = new ArrayList<>();
+        List<FlyingObject> enemiesDead = new ArrayList<>();
         for(FlyingObject e : enemies){
-            if(!e.outOfBounds() && !e.isRemove()){
-                enemiesAlive.add(e);
+            if(e.outOfBounds() && e.isRemove()){
+                enemiesDead.add(e);
             }
         }
-        enemies = enemiesAlive;
-
-        List<Bullet> bulletsAlive = new ArrayList<>();
+        List<Bullet> bulletsDead = new ArrayList<>();
         for(Bullet b : bullets){
-            if(!b.outOfBounds() && !b.isRemove()){
-                bulletsAlive.add(b);
+            if(b.outOfBounds() && b.isRemove()){
+                bulletsDead.add(b);
             }
         }
-        bullets = bulletsAlive;
+
+        synchronized (this){
+            enemies.removeAll(enemiesDead);
+            bullets.removeAll(bulletsDead);
+        }
     }
 
     /**
@@ -142,19 +224,20 @@ public class World extends JPanel {
     public void bulletsHitEnemyAction(){
         for(FlyingObject f : enemies){
             for(Bullet b : bullets){
-                if(f.isLife() && b.isLife() && f.hit(b)){
-                    f.goDead();
+                if(f.isAlive() && b.isAlive() && f.hit(b)){
                     b.goDead();
-                    if(f instanceof Enemy){
-                        score += ((Enemy) f).getScore();
-                    }else if(f instanceof Award){
-                        int type = ((Award) f).getType();
+                    f.subtractHealth();
+                    if(f.isDead()){
+                        int type = ((Enemy)f).getAwardType();
                         switch (type){
-                            case Award.DOUBLE_FIRE:
+                            case Enemy.DOUBLE_FIRE:
                                 hero.addDoubleFire();
                                 break;
-                            case Award.LIVES:
-                                hero.addLife();
+                            case Enemy.HEALTH:
+                                hero.addHealth();
+                                break;
+                            case Enemy.SCORE:
+                                score += ((Enemy) f).getScore();
                                 break;
                         }
                     }
@@ -168,9 +251,9 @@ public class World extends JPanel {
      */
     public void heroHitEnemyAction(){
         for(FlyingObject f : enemies){
-            if(f.isLife() && f.hit(hero)){
+            if(f.isAlive() && f.hit(hero)){
                 f.goDead();
-                hero.subtractLife();
+                hero.subtractHealth();
                 hero.clearDoubleFire();
             }
         }
@@ -180,8 +263,24 @@ public class World extends JPanel {
      * check whether the game is over or not
      */
     public void checkGameOverAction(){
-        if(hero.getLife() <= 0){
-            status = GAME_OVER;
+        if(hero.getHealth() <= 0){
+            gameStatus = GAME_OVER;
+        }
+    }
+
+    public void checkGameLevelAction(){
+        if(score <= 10){
+            level = 1;
+        }else if(score <= 30){
+            level = 2;
+        }else if(score <= 60){
+            level = 3;
+        }else if(score <= 120){
+            level = 4;
+        }else if(score <= 150){
+            level = 5;
+        }else{
+            gameStatus = WIN;
         }
     }
 
@@ -189,7 +288,7 @@ public class World extends JPanel {
         MouseAdapter mouseAdapter = new MouseAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
-                if(status == RUNNING){
+                if(gameStatus == RUNNING){
                     int x = e.getX();
                     int y = e.getY();
                     hero.moveTo(x, y);
@@ -198,32 +297,39 @@ public class World extends JPanel {
 
             @Override
             public void mouseClicked(MouseEvent e) {
-                switch (status){
+                switch (gameStatus){
                     case START:
-                        status = RUNNING;
+                        gameStatus = RUNNING;
                         break;
                     case GAME_OVER:
-                        score = 0;
-                        sky = new Sky();
-                        hero = new Hero();
-                        enemies.clear();
-                        bullets.clear();
-                        status = START;
+                        initGame();
                         break;
-                }
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                if(status == PAUSE){
-                    status = RUNNING;
-                }
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                if(status == RUNNING){
-                    status = PAUSE;
+                    case RUNNING:
+                        gameStatus = PAUSE;
+                        break;
+                    case PAUSE:
+                        int x = e.getX();
+                        int y = e.getY();
+                        if(y>=0 && y<=39){
+                            if(x>=WIDTH-144 && x<WIDTH-71){
+                                gameStatus = SAVING;
+                                saveGame();
+                                gameStatus = PAUSE;
+                                break;
+                            }else if(x>=WIDTH-71 && x<=WIDTH){
+                                gameStatus = LOADING;
+                                loadGame();
+                                gameStatus = PAUSE;
+                                break;
+                            }
+                        }else {
+                            gameStatus = RUNNING;
+                            break;
+                        }
+                    case WIN:
+                        initGame();
+                        gameStatus = START;
+                        break;
                 }
             }
         };
@@ -234,7 +340,8 @@ public class World extends JPanel {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if(status == RUNNING){
+                if(gameStatus == RUNNING){
+                    actionIndex++;
                     enterAction();
                     stepAction();
                     shootAction();
@@ -242,6 +349,7 @@ public class World extends JPanel {
                     bulletsHitEnemyAction();
                     heroHitEnemyAction();
                     checkGameOverAction();
+                    checkGameLevelAction();
                 }
                 repaint();
             }
@@ -251,26 +359,48 @@ public class World extends JPanel {
     @Override
     public void paint(Graphics g) {
         sky.paintObject(g);
+        g.drawImage(images.get("saveButton"), 0, 0, null);
         hero.paintObject(g);
-        for(FlyingObject f : enemies){
-            f.paintObject(g);
+        synchronized (this){
+            for(FlyingObject f : enemies){
+                f.paintObject(g);
+            }
+            for(Bullet b : bullets){
+                b.paintObject(g);
+            }
         }
-        for(Bullet b : bullets){
-            b.paintObject(g);
-        }
-        g.drawString("SCORE: "+score, 10, 25);
-        g.drawString("LIVES: "+hero.getLife(), 10, 45);
 
-        switch(status){
+        switch(gameStatus){
             case START:
-                g.drawImage(startImage, 0, 0, null);
+                g.drawImage(images.get("start"), 0, 0, null);
                 break;
             case PAUSE:
-                g.drawImage(pauseImage, 0, 0, null);
+                g.drawImage(images.get("pause"), 0, 0, null);
                 break;
             case GAME_OVER:
-                g.drawImage(gameoverImage, 0, 0, null);
+                g.drawImage(images.get("over"), 0, 0, null);
+                break;
+            case WIN:
+                g.drawImage(sky.getImage(), 0, 0, null);
+                g.drawImage(images.get("win"), 0, 0, null);
+                break;
+            case SAVING:
+                g.drawImage(sky.getImage(), 0, 0, null);
+                g.drawImage(images.get("saving"), 0, 0, null);
+                break;
+            case LOADING:
+                g.drawImage(sky.getImage(), 0, 0, null);
+                g.drawImage(images.get("loading"), 0, 0, null);
+                break;
         }
+
+        g.drawString("SCORE: "+score, 10, 25);
+        g.drawString("HEALTH: "+hero.getHealth(), 10, 45);
+        g.drawString("LEVEL: "+level, 10, 65);
+
+        g.drawLine(WIDTH-144, 39, WIDTH, 39);
+        g.drawLine(WIDTH-144, 39, WIDTH-144, 0);
+        g.drawLine(WIDTH-71, 39, WIDTH-71, 0);
     }
 
     public static void main(String[] args) {
