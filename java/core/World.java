@@ -9,6 +9,7 @@ import java.io.*;
 import java.util.*;
 import java.util.List;
 import java.util.Timer;
+import java.awt.Graphics;
 
 public class World extends JPanel implements Serializable {
     private static final int serialVersionUID = 2;
@@ -363,7 +364,6 @@ public class World extends JPanel implements Serializable {
     @Override
     public void paint(Graphics g) {
         sky.paintObject(g);
-        g.drawImage(images.get("saveButton"), 0, 0, null);
         hero.paintObject(g);
         synchronized (this){
             for(FlyingObject f : enemies){
@@ -379,6 +379,7 @@ public class World extends JPanel implements Serializable {
                 g.drawImage(images.get("start"), 0, 0, null);
                 break;
             case PAUSE:
+                g.drawImage(images.get("saveButton"), 0, 0, null);
                 g.drawImage(images.get("pause"), 0, 0, null);
                 break;
             case GAME_OVER:
