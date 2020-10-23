@@ -65,10 +65,14 @@ public class World extends JPanel implements Serializable {
     private int score;
     private int level;
     private int actionIndex;
-    private Sky sky = new Sky();
-    private Hero hero = new Hero();
-    private List<FlyingObject> enemies = Collections.synchronizedList(new ArrayList<>());
-    private List<Bullet> bullets = Collections.synchronizedList(new ArrayList<>());
+    private Sky sky;
+    private Hero hero;
+    private List<FlyingObject> enemies;
+    private List<Bullet> bullets;
+
+    World(){
+        initGame();
+    }
 
     private void initGame(){
         System.out.println("正在初始化游戏...");
@@ -86,10 +90,10 @@ public class World extends JPanel implements Serializable {
     private void saveGame(){
         System.out.println("正在保存当前游戏状态...");
         System.out.println(" score:"+score+
-                "\n level:"+level
-                +"\n hero_health:"+hero.getHealth()
-                +"\n enemies_count"+enemies.size()
-                +"\n bullets_count"+bullets.size()
+                "\n level: "+level
+                +"\n hero_health: "+hero.getHealth()
+                +"\n enemies_count: "+enemies.size()
+                +"\n bullets_count: "+bullets.size()
         );
         try {
             ObjectOutputStream oos = new ObjectOutputStream(
@@ -113,12 +117,6 @@ public class World extends JPanel implements Serializable {
     @SuppressWarnings("unchecked")
     private void loadGame(){
         System.out.println("正在加载上次存档的游戏...");
-        System.out.println(" score:"+score+
-                "\n level:"+level
-                +"\n hero_health:"+hero.getHealth()
-                +"\n enemies_count"+enemies.size()
-                +"\n bullets_count"+bullets.size()
-        );
         try {
             ObjectInputStream ois = new ObjectInputStream(
                     new FileInputStream(
@@ -138,6 +136,12 @@ public class World extends JPanel implements Serializable {
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
+        System.out.println(" score:"+score+
+                "\n level: "+level
+                +"\n hero_health: "+hero.getHealth()
+                +"\n enemies_count: "+enemies.size()
+                +"\n bullets_count: "+bullets.size()
+        );
         System.out.println("加载成功!!!");
     }
 
@@ -199,13 +203,13 @@ public class World extends JPanel implements Serializable {
     public void outOfBoundsAction(){
         List<FlyingObject> enemiesDead = new ArrayList<>();
         for(FlyingObject e : enemies){
-            if(e.outOfBounds() && e.isRemove()){
+            if(e.outOfBounds() || e.isRemove()){
                 enemiesDead.add(e);
             }
         }
         List<Bullet> bulletsDead = new ArrayList<>();
         for(Bullet b : bullets){
-            if(b.outOfBounds() && b.isRemove()){
+            if(b.outOfBounds() || b.isRemove()){
                 bulletsDead.add(b);
             }
         }
@@ -397,10 +401,6 @@ public class World extends JPanel implements Serializable {
         g.drawString("SCORE: "+score, 10, 25);
         g.drawString("HEALTH: "+hero.getHealth(), 10, 45);
         g.drawString("LEVEL: "+level, 10, 65);
-
-        g.drawLine(WIDTH-144, 39, WIDTH, 39);
-        g.drawLine(WIDTH-144, 39, WIDTH-144, 0);
-        g.drawLine(WIDTH-71, 39, WIDTH-71, 0);
     }
 
     public static void main(String[] args) {
