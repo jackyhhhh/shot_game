@@ -83,8 +83,8 @@ public class World extends JPanel implements Serializable {
         actionIndex = 0;
         sky = new Sky();
         hero = new Hero();
-        enemies = Collections.synchronizedList(new ArrayList<>());
-        bullets = Collections.synchronizedList(new ArrayList<>());
+        enemies = new ArrayList<>();
+        bullets = new ArrayList<>();
         System.out.println("游戏初始化成功, 准备就绪!");
     }
 
@@ -96,47 +96,29 @@ public class World extends JPanel implements Serializable {
                 +"\n enemies_count: "+enemies.size()
                 +"\n bullets_count: "+bullets.size()
         );
-        try {
-            ObjectOutputStream oos = new ObjectOutputStream(
-                    new FileOutputStream(
-                            new File("profile"+File.separator+"save_file.dat"
-                            )
-                    )
-            );
 
-            oos.writeObject(score+"-"+level);
-            oos.writeObject(sky);
-            oos.writeObject(hero);
-            oos.writeObject(enemies);
-            oos.writeObject(bullets);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        PersistentUtils pu = PersistentUtils.getInstance("profile"+File.separator+"save_file.dat");
+        pu.writeObject(score+"-"+level);
+        pu.writeObject(sky);
+        pu.writeObject(hero);
+        pu.writeObject(enemies);
+        pu.writeObject(bullets);
         System.out.println("游戏存档成功!!");
     }
 
     @SuppressWarnings("unchecked")
     private void loadGame(){
         System.out.println("正在加载上次存档的游戏...");
-        try {
-            ObjectInputStream ois = new ObjectInputStream(
-                    new FileInputStream(
-                            new File("profile"+File.separator+"save_file.dat"
-                            )
-                    )
-            );
-            actionIndex = 0;
-            String line = (String) ois.readObject();
-            String[] data = line.split("-");
-            score = Integer.parseInt(data[0]);
-            level = Integer.parseInt(data[1]);
-            sky = (Sky) ois.readObject();
-            hero = (Hero) ois.readObject();
-            enemies = (List<FlyingObject>) ois.readObject();
-            bullets = (List<Bullet>) ois.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        actionIndex = 0;
+        PersistentUtils pu = PersistentUtils.getInstance("profile"+File.separator+"save_file.dat");
+        String line = (String) pu.readObject();
+        String[] data = line.split("-");
+        score = Integer.parseInt(data[0]);
+        level = Integer.parseInt(data[1]);
+        sky = (Sky) pu.readObject();
+        hero = (Hero) pu.readObject();
+        enemies = (List<FlyingObject>) pu.readObject();
+        bullets = (List<Bullet>) pu.readObject();
         System.out.println(" score:"+score+
                 "\n level: "+level
                 +"\n hero_health: "+hero.getHealth()
@@ -208,15 +190,17 @@ public class World extends JPanel implements Serializable {
                 enemiesDead.add(e);
             }
         }
+        synchronized (enemies) {
+            enemies.removeAll(enemiesDead);
+        }
+
         List<Bullet> bulletsDead = new ArrayList<>();
         for(Bullet b : bullets){
             if(b.outOfBounds() || b.isRemove()){
                 bulletsDead.add(b);
             }
         }
-
-        synchronized (this){
-            enemies.removeAll(enemiesDead);
+        synchronized (bullets){
             bullets.removeAll(bulletsDead);
         }
     }
@@ -365,10 +349,12 @@ public class World extends JPanel implements Serializable {
     public void paint(Graphics g) {
         sky.paintObject(g);
         hero.paintObject(g);
-        synchronized (this){
-            for(FlyingObject f : enemies){
+        synchronized (enemies) {
+            for (FlyingObject f : enemies) {
                 f.paintObject(g);
             }
+        }
+        synchronized (bullets){
             for(Bullet b : bullets){
                 b.paintObject(g);
             }
