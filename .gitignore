@@ -1,0 +1,3 @@
+*.class
+profile/save_file.dat
+.idea/*
