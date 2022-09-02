@@ -18,7 +18,7 @@ public class Hero extends FlyingObject {
     Hero() {
         super(127, 169, 210, 550);
         health = 3;
-        doubleFire = 40;
+        doubleFire = 0;
     }
 
     @Override
