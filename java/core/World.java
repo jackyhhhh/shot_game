@@ -258,17 +258,8 @@ public class World extends JPanel implements Serializable {
     }
 
     public void checkGameLevelAction(){
-        if(score <= 10){
-            level = 1;
-        }else if(score <= 30){
-            level = 2;
-        }else if(score <= 60){
-            level = 3;
-        }else if(score <= 120){
-            level = 4;
-        }else if(score <= 150){
-            level = 5;
-        }else{
+        level = score / 20;
+        if (level > 20) {
             gameStatus = WIN;
         }
     }
